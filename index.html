@@ -21,13 +21,14 @@
 <script>
     // 1. Firebase Configuration
     const firebaseConfig = {
-      apiKey: "AIzaSyBc0Zi8WORFkSf5zJGK-ZMn41eVwJDLS7g",
-      authDomain: "wustep-182603.firebaseapp.com",
-      databaseURL: "https://wustep-182603-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "wustep-182603",
-      storageBucket: "wustep-182603.firebasestorage.app",
-      messagingSenderId: "682027946037",
-      appId: "1:682027946037:web:8faaf144d2539c20a9217c"
+        apiKey: "AIzaSyAutgRIzezpHhqyQL0gtGczIZ9_Mf4t5gQ",
+        authDomain: "demon-a0d1d.firebaseapp.com",
+        databaseURL: "https://demon-a0d1d-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "demon-a0d1d",
+        storageBucket: "demon-a0d1d.firebasestorage.app",
+        messagingSenderId: "571926791175",
+        appId: "1:571926791175:web:f420da410d3fdf0bd916a2",
+        measurementId: "G-6ER5FX7W7N"
     };
 
     // Initialize Firebase
@@ -35,6 +36,20 @@
     const auth = firebase.auth();
     const db = firebase.database();
     const provider = new firebase.auth.GoogleAuthProvider();
+
+    // ตรวจสอบสถานะการล็อกอินเมื่อโหลดหน้าเว็บ
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            console.log("User is already logged in:", user.displayName);
+            document.getElementById('user-info').innerText = "สวัสดี: " + user.displayName;
+            document.getElementById('btn-login').style.display = 'none';
+            loadGameData(user.uid);
+        } else {
+            console.log("No user logged in.");
+            document.getElementById('btn-login').style.display = 'block';
+            document.getElementById('user-info').innerText = "";
+        }
+    });
 
     // ฟังก์ชันล็อกอิน
     document.getElementById('btn-login').onclick = () => {
