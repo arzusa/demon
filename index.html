@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phaser First Game</title>
+    <!-- โหลด Phaser ผ่าน CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+
+    <!-- โหลด Firebase SDK (Compat version เพื่อให้ใช้งานง่ายในไฟล์เดียว) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="login-ui" style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+    <button id="btn-login" style="padding: 10px 20px; cursor: pointer;">Login with Google</button>
+    <span id="user-info" style="margin-left: 10px; color: white; font-family: sans-serif;"></span>
+</div>
+
+<script>
+    // 1. Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBc0Zi8WORFkSf5zJGK-ZMn41eVwJDLS7g",
+      authDomain: "wustep-182603.firebaseapp.com",
+      databaseURL: "https://wustep-182603-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "wustep-182603",
+      storageBucket: "wustep-182603.firebasestorage.app",
+      messagingSenderId: "682027946037",
+      appId: "1:682027946037:web:8faaf144d2539c20a9217c"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    // ฟังก์ชันล็อกอิน
+    document.getElementById('btn-login').onclick = () => {
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                const user = result.user;
+                document.getElementById('user-info').innerText = "สวัสดี: " + user.displayName;
+                document.getElementById('btn-login').style.display = 'none';
+                console.log("Logged in as:", user.displayName);
+
+                // โหลดข้อมูลเกม (ถ้ามี)
+                loadGameData(user.uid);
+            })
+            .catch((error) => {
+                console.error("Login Error:", error.message);
+                alert("ล็อกอินไม่สำเร็จ: " + error.message);
+            });
+    };
+
+    function loadGameData(uid) {
+        db.ref('users/' + uid).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                console.log("โหลดข้อมูลสำเร็จ:", snapshot.val());
+            } else {
+                console.log("ไม่มีข้อมูลเซฟเกม สร้างใหม่...");
+            }
+        });
+    }
+
+    // Phaser Game Logic
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 0 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+    let dog;
+    let velocity = 200;
+
+    function preload () {
+        this.load.spritesheet('dog', 'img/dog-sprite.png', { frameWidth: 325, frameHeight: 225 });
+    }
+
+    function create () {
+        dog = this.physics.add.sprite(400, 300, 'dog');
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('dog', { start: 0, end: 7 }),
+            frameRate: 12,
+            repeat: -1
+        });
+        dog.play('run');
+        dog.setCollideWorldBounds(true);
+        dog.setBounce(1);
+        dog.setVelocityX(velocity);
+
+        this.add.text(400, 50, 'Dog is running (Perfect 8 Frames)!', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+
+        const buttonConfigs = [
+            { x: 100, y: 100, text: 'ความเร็ว', color: 0xef4444, action: () => {
+                velocity = 500;
+                dog.setVelocityX(dog.body.velocity.x > 0 ? velocity : -velocity);
+                alert('เรียนรู้: การเปลี่ยน Velocity ทำให้วัตถุเคลื่อนที่เร็วขึ้น!');
+            }},
+            { x: 300, y: 100, text: 'ช้าลง', color: 0x3b82f6, action: () => {
+                velocity = 50;
+                dog.setVelocityX(dog.body.velocity.x > 0 ? velocity : -velocity);
+                alert('เรียนรู้: Velocity ต่ำลง ทำให้วัตถุเคลื่อนที่ช้าลง');
+            }},
+            { x: 500, y: 100, text: 'กระโดด', color: 0x10b981, action: () => {
+                dog.setVelocityY(-300);
+                alert('เรียนรู้: การใส่ค่า Velocity Y เป็นลบ จะทำให้วัตถุพุ่งขึ้นด้านบน');
+            }},
+            { x: 100, y: 500, text: 'เปลี่ยนสี', color: 0xf59e0b, action: () => {
+                dog.setTint(Math.random() * 0xffffff);
+                alert('เรียนรู้: setTint ใช้สำหรับเปลี่ยนสีของ Sprite');
+            }},
+            { x: 300, y: 500, text: 'ขยายตัว', color: 0x8b5cf6, action: () => {
+                dog.setScale(dog.scaleX * 1.2);
+                alert('เรียนรู้: setScale ใช้ปรับขนาดของวัตถุ');
+            }},
+            { x: 500, y: 500, text: 'รีเซ็ต', color: 0x6b7280, action: () => {
+                velocity = 200;
+                dog.setScale(1);
+                dog.clearTint();
+                dog.setVelocityX(dog.body.velocity.x > 0 ? velocity : -velocity);
+                alert('เรียนรู้: การตั้งค่ากลับเป็นค่าเริ่มต้น');
+            }}
+        ];
+
+        buttonConfigs.forEach(btn => {
+            const rect = this.add.rectangle(btn.x, btn.y, 120, 50, btn.color).setInteractive();
+            this.add.text(btn.x, btn.y, btn.text, { fontSize: '20px', fill: '#fff' }).setOrigin(0.5);
+            rect.on('pointerdown', () => {
+                btn.action();
+            });
+        });
+    }
+
+    function update () {
+        if (dog.body.blocked.left) {
+            dog.setVelocityX(velocity);
+            dog.setFlipX(false);
+        } else if (dog.body.blocked.right) {
+            dog.setVelocityX(-velocity);
+            dog.setFlipX(true);
+        }
+    }
+</script>
+
+</body>
+</html>
