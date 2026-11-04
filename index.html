@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 </head>
 <body>
 
@@ -51,6 +52,7 @@
         }
     });
 
+
     // ฟังก์ชันล็อกอิน
     document.getElementById('btn-login').onclick = () => {
         auth.signInWithPopup(provider)
@@ -69,13 +71,48 @@
             });
     };
 
-    function loadGameData(uid) {
-        db.ref('users/' + uid).once('value').then((snapshot) => {
-            if (snapshot.exists()) {
-                console.log("โหลดข้อมูลสำเร็จ:", snapshot.val());
-            } else {
-                console.log("ไม่มีข้อมูลเซฟเกม สร้างใหม่...");
+    // ข้อมูลเริ่มต้นสำหรับผู้เล่นใหม่
+    const defaultPlayerData = {
+        profile: {
+            maxhp: 100,
+            curhp: 100,
+            maxmana: 50,
+            curmana: 50,
+            level: 1,
+            exp: 0
+        },
+        inventory: {
+            "item_001": {
+                id: "knife",
+                name: "มีดพื้นฐาน",
+                amount: 1,
+                type: "weapon"
             }
+        }
+    };
+
+    function loadGameData(uid) {
+        const userRef = db.ref('users/' + uid);
+
+        userRef.once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                // --- กรณีเคย Sign in แล้ว: โหลดข้อมูลที่มีอยู่ ---
+                const userData = snapshot.val();
+                console.log("โหลดข้อมูลผู้เล่นสำเร็จ:", userData);
+                // สามารถนำ userData ไปกำหนดค่าให้ตัวละครในเกมได้ที่นี่
+            } else {
+                // --- กรณีผู้เล่นใหม่: สร้างข้อมูลเริ่มต้น ---
+                console.log("ไม่พบข้อมูลผู้ใช้ สร้างข้อมูลเริ่มต้น...");
+                userRef.set(defaultPlayerData)
+                    .then(() => {
+                        console.log("สร้างข้อมูลผู้เล่นใหม่สำเร็จ!");
+                    })
+                    .catch((error) => {
+                        console.error("เกิดข้อผิดพลาดในการสร้างข้อมูล:", error);
+                    });
+            }
+        }).catch((error) => {
+            console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
         });
     }
 
@@ -171,7 +208,7 @@
             dog.setFlipX(true);
         }
     }
-    console.log(firebase.app().options.projectId); // หรือตรวจสอบค่า config ที่แอปโหลดขึ้นมา
+    
 </script>
 
 </body>
